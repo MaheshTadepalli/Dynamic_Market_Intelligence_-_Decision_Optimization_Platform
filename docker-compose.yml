@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dmidop
+      POSTGRES_PASSWORD: dmidop
+      POSTGRES_DB: dmidop
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dmidop -d dmidop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-use-openssl-rand-hex-32}
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      DATABASE_URL: postgresql+asyncpg://dmidop:dmidop@db:5432/dmidop
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@dmidop.local}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123!}
+      DATA_DIR: /app/data
+      MODELS_DIR: /app/models
+      MLFLOW_TRACKING_URI: /app/mlruns
+      USE_REAL_MARKET_DATA: "true"
+      UNIVERSE_SIZE: "80"
+    volumes:
+      - api_data:/app/data
+      - api_models:/app/models
+      - mlruns:/app/mlruns
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  api_data:
+  api_models:
+  mlruns:

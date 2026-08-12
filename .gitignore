@@ -1,0 +1,24 @@
+# Dynamic Market Intelligence & Decision Optimization Platform
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+.env
+.DS_Store
+node_modules/
+frontend/.next/
+frontend/out/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+api_data/
+backend/data/
+backend/models/
+backend/mlruns/
+data/
+models/
+mlruns/
+*.parquet
+*.log
